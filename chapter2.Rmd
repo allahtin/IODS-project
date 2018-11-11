@@ -1,7 +1,107 @@
-# Insert chapter 2 title here
+# ANALYSIS part of the Exercise Set 2
 
-*Describe the work you have done this week and summarize your learning.*
+\vspace{20pt}
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+##*1. Reading the data from the previous step, exploting it and describing the dataset*
+
+
+```{r}
+data<- read.table("data/learning2014.txt", header=T, sep ="\t")
+head(data)
+dim(data)
+```
+This dataset has 166 rows and 7 columns which corresponds to the 166 participants with 7 measured or calculated characteristics.Since I used R function scale() to the last three columns, there are now scaled variables, also negative ones. The dataset has info on age, gender and examination total points, as well as three variables deep, stra, surf that are described in the course outline. The rows containing zeroes are removed, so the final number is down to 166 participants (from 183).
+
+
+##*2. Graphical representation of the data using ggplot2*
+
+Let's check how variable Attitude looks like in relation to Points. I will use ggplot2 just plotting Points vs Attitude.
+
+```{r}
+library(ggplot2)
+p1 <- ggplot(data, aes(x = Attitude, y = Points))
+p2 <- p1 + geom_point()
+p2
+```
+
+Let's as well check Age and deep in relation to Points.
+```{r}
+p3 <- ggplot(data, aes(x = Age, y = Points))
+p4 <- p3 + geom_point()
+p4
+```
+
+The distribution is a bit scewed, as they are probably typical students, around 20 years of age. There is a good distribution of exam scores.
+```{r}
+p5 <- ggplot(data, aes(x = deep, y = Points))
+p6 <- p5 + geom_point()
+p6
+```
+
+This distribution is centered around the 0,  as variable "deep" was scaled with mean set to 0.
+
+```{r}
+summary(data)
+```
+
+R function summary provides the basic statistics of each variable, except for gender, of course, for which it shows frequences.
+
+
+##*3. Multiple regression with three variables and Points as dependent variable*
+
+Now we will use lm function to run a regression model
+```{r}
+model1 <- lm(Points ~ Attitude + deep + Age, data = data)
+summary(model1)
+```
+
+Attitude has a statistically significant p value of 2.56e-09. Deep and Age do not and to be removed from the model. Overall p value for model1 is nice (4.305e-08), so let's now run it without Age and deep.
+
+```{r}
+model2 <- lm(Points ~ Attitude, data = data)
+summary(model2)
+```
+
+Now p value is even nicer - 4.12e-09. So Age and deep do not influence significantly my model with Attitude. Let's look at the plot of it.
+```{r}
+p1 <- ggplot(data, aes(x = Attitude, y = Points))
+p2 <- p1 + geom_point()+ geom_smooth(method = "lm")
+p2
+```
+
+Nice graph of my model!
+
+
+##*4. Interpretation of the summary of lm model*
+
+```{r}
+model2 <- lm(Points ~ Attitude, data = data)
+summary(model2)
+```
+
+First of, all the summary gives out the residuals.  The smaller the average of residuals, the better the model fits the data. SO here we look at Median 0.4339. In fact, with Age and deep it was smaller (0.2).
+Next, R outputs the regression coefficients of the model. For each coefficient (we have only Attitude left), standard errors, t-statistics, and two-sided p-values are presented in the output. There is a positive correlation (Estimate is 0.35255), the relationship is significant, as P value is 4.12e-09, it is also indicated by 3 asterics. There are 164 degrees of freedom (166-2), Multiple R squared is 0.1906. That means that the predictor Attitude explain only 19.06 of the observed variance on the dependent variable ‘Points’.
+
+##*5. Four diagnostic plots for linear regression*
+
+```{r}
+model2 <- lm(Points ~ Attitude, data = data)
+plot(model2)
+```
+
+1. Residuals vs Fitted
+
+This plot shows if residuals have non-linear patterns.  As seen from the plot, there are equally spread residuals around a horizontal line without distinct patterns, which is a good indication we don’t have non-linear relationships.
+
+2. Normal Q-Q
+
+This plot shows if residuals are normally distributed. The residuals may follow a straight line well or  they deviate severely. We have them well lined and deviating at the "ends" of the graph, but overall there is a good alignment of them. 
+
+3. Scale-Location
+
+This plot shows if residuals are spread equally along the ranges of predictors. This is how we can check the assumption of equal variance (homoscedasticity). We can say that we see a sort of horizontal line with equally (randomly) spread points.
+
+4. Residuals vs Leverage
+
+This plot helps us to find influential cases (i.e., subjects) if any. Not all outliers are influential in linear regression analysis. Even though data have extreme values, they might not be influential to determine a regression line. That means, the results wouldn’t be much different if we either include or exclude them from analysis. They follow the trend in the majority of cases and they don’t really matter; they are not influential. Here we see some labeled cases that deviate but we are not going to exclude them from analysis, I would say.
+

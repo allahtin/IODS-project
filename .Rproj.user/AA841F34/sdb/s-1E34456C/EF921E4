@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "---\ntitle: \"IODS course project\"\nauthor: \"Alexandra Lahtinen\"\noutput:\n  html_document:\n    theme: cosmo\n    toc: true\n    toc_depth: 2\n    fig_caption: true\n    fig_width: 6\n    fig_height: 4\n    code_folding: hide\n---\n\n***\n  \n```{r child = \"chapter1.Rmd\"}\n```\n  \n***\n  \n```{r child = \"chapter2.Rmd\"}\n```\n\n***\n",
+    "created" : 1541955891670.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2615524380",
+    "id" : "EF921E4",
+    "lastKnownWriteTime" : 1541963877,
+    "last_content_update" : -2147483648,
+    "path" : "~/GitHub/IODS-project/index.Rmd",
+    "project_path" : "index.Rmd",
+    "properties" : {
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
