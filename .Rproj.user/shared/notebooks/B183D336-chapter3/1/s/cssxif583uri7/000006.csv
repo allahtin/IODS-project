@@ -1,0 +1,73 @@
+"0","joined_data %>% group_by(sex) %>% summarise(count = n())
+"
+"1","# A tibble: 2 x 2
+"
+"1","  sex   count
+"
+"1","  <fct> <int>
+"
+"1","1 F       198
+"
+"1","2 M       184
+"
+"0","joined_data %>% group_by(age) %>% summarise(count = n())"
+"1","# A tibble: 7 x 2
+"
+"1","    age count
+"
+"1","  <int> <int>
+"
+"1","1    15    81
+"
+"1","2    16   107
+"
+"1","3    17   100
+"
+"1","4    18    81
+"
+"1","5    19    11
+"
+"1","6    20     1
+"
+"1","7    22     1
+"
+"0","joined_data %>% group_by(internet) %>% summarise(count = n())"
+"1","# A tibble: 2 x 2
+"
+"1","  internet count
+"
+"1","  <fct>    <int>
+"
+"1","1 no          58
+"
+"1","2 yes        324
+"
+"0","joined_data %>% group_by(absences) %>% summarise(count = n())"
+"1","# A tibble: 26 x 2
+"
+"1","   absences count
+"
+"1","      <int> <int>
+"
+"1"," 1        0    65
+"
+"1"," 2        1    51
+"
+"1"," 3        2    58
+"
+"1"," 4        3    41
+"
+"1"," 5        4    36
+"
+"1"," 6        5    22
+"
+"1"," 7        6    21
+"
+"1"," 8        7    12
+"
+"1"," 9        8    20
+"
+"1","10        9    12
+"
+"1","# ... with 16 more rows
+"

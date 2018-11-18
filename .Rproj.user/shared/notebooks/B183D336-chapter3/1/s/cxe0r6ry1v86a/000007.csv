@@ -1,0 +1,29 @@
+"0","library(dplyr)
+library(ggplot2)
+g <- ggplot(joined_data, aes(x = probability, y = high_use, col = prediction))
+g + geom_point()
+table(high_use = joined_data$high_use, prediction = joined_data$prediction) %>% prop.table %>% addmargins
+"
+"1","        prediction
+"
+"1","high_use"
+"1","      FALSE"
+"1","       TRUE"
+"1","        Sum"
+"1","
+   FALSE"
+"1"," 0.68062827"
+"1"," 0.02094241"
+"1"," 0.70157068"
+"1","
+   TRUE "
+"1"," 0.21989529"
+"1"," 0.07853403"
+"1"," 0.29842932"
+"1","
+   Sum  "
+"1"," 0.90052356"
+"1"," 0.09947644"
+"1"," 1.00000000"
+"1","
+"

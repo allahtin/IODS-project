@@ -1,0 +1,138 @@
+# ANALYSIS part of the Exercise Set 3
+
+\vspace{20pt}
+
+##*1&2. Reading the joined student alcohol consumption data into R and exploring it*
+```{r}
+library(dplyr)
+joined_data<-read.table("Joined student alcohol consumption data.txt", header=T)
+dim(joined_data)
+glimpse(joined_data)
+```
+The dataset "joined_data"" includes info on student achievement in secondary education of two Portuguese schools. The data variables (35) include student grades, demographic, social and school related features) and it was collected by using school reports and questionnaires. Two datasets are provided regarding the performance in two distinct subjects: Mathematics (mat) and Portuguese language (por).
+
+##*3. Choosing variables and study hypotheses.*
+
+The purpose of my analysis is to study the relationships between high/low alcohol consumption and some of the other variables in the data. To do this, I choose the following 4  variables:
+1. sex (hypothesis is that boys in average consume more alcohol an would be more often high-users), 2. age (older students would be consuming more and more of older ones would be found in high-users' group), 3. internet (those who have internet would be high-users or consume more) and 4.absences (the idea is that the more absences would be associated with high-users.
+
+##*4. The distrubutions of the chosen variables and what about my study hypotheses?*
+```{r}
+joined_data %>% group_by(sex) %>% summarise(count = n())
+joined_data %>% group_by(age) %>% summarise(count = n())
+joined_data %>% group_by(internet) %>% summarise(count = n())
+joined_data %>% group_by(absences) %>% summarise(count = n())
+```
+```{r}
+library(ggplot2)
+g1 <- ggplot(joined_data, aes(x = high_use, y = age))
+g1 + geom_boxplot() + ylab("age")
+```
+
+The hypothesis about age looks like correct one: high-users are older in average.
+
+```{r}
+library(ggplot2)
+g1 <- ggplot(joined_data, aes(high_use))
+g1 + geom_bar(aes(fill=sex)) 
+```
+
+Hypothesis about sex seems to be correct, too: in the high-users group there seems to be more boys than girls.
+
+```{r}
+library(ggplot2)
+g1 <- ggplot(joined_data, aes(high_use))
+g1 + geom_bar(aes(fill=internet)) 
+```
+
+Here it is not so obvious: it looks like in the high-users there are more of those who have internet, but this relationship is no so obvious and requires testing.
+
+```{r}
+library(ggplot2)
+g1 <- ggplot(joined_data, aes(x = high_use, y = absences))
+g1 + geom_boxplot() + ylab("absences")
+```
+
+In case of absences we need to do calculations: it is not anymore obvious, though it seems that higher number of absences are indeed observed in the group of high-users.
+
+##*5. Logistic regression*
+
+Four variables are: sex, age, internet, absences.
+
+```{r}
+m <- glm(high_use ~ age + sex + internet + absences, data = joined_data, family = "binomial")
+summary(m)
+coef(m)
+```
+
+Summary of glm: Overall model is nicely fitted with significant P value (0.00618). However we can see that effect size is biggest for sex (0.98 is the estimate for boys). Next one is age, which is logical, as perhaps in case of alcohol consumption, getting older might make it easier to get alcohol somehow.Though P value is greater than 0.05 (0.08333).  Absences are at third place and they show significat association with high-users of alcohol. Internet seems to affect the least and is not significantly associated with being a high-user.The same was seen in the box plots and bars I made at the previous step. 
+
+Now I will compute coefficients of the model as odds ratios and provide confidence intervals for them.
+
+```{r}
+OR <- coef(m) %>% exp
+CI <- confint(m) %>% exp
+cbind(OR, CI)
+```
+
+##*6. Binary prediction*
+
+```{r}
+library(dplyr)
+m <- glm(high_use ~ age + sex + internet + absences, data = joined_data, family = "binomial")
+probabilities <- predict(m, type = "response")
+joined_data <- mutate(joined_data, probability = probabilities)
+joined_data <- mutate(joined_data, prediction = probability > 0.5)
+select(joined_data, age, internet, absences, sex, high_use, probability, prediction) %>% tail(10)
+table(high_use = joined_data$high_use, prediction = joined_data$prediction)
+```
+
+Comment: My prediction managed to predict 30 true high-users and 8 of them it predicted wrongly. For the oppositem 260 were predicted correctly and 84 not. Let's see how it looks like on plots. Looks like qiote a large error to me.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+g <- ggplot(joined_data, aes(x = probability, y = high_use, col = prediction))
+g + geom_point()
+table(high_use = joined_data$high_use, prediction = joined_data$prediction) %>% prop.table %>% addmargins
+```
+
+Now I calculate the trainng error or average number of wrong predictions in the training data.
+
+```{r}
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+loss_func(class = joined_data$high_use, prob = 0)
+
+```
+
+So the average number of wrong predictions is higher than we had in DataCamp example (it was 0.26 there). My model is not as good as the one in the example.According to own experience it is quite a large error, so model does not work too well,  based on these 4 variables. Maybe internet and 
+
+##*Bonus*
+
+I will do K-fold cross-validation, as shown in the example with K=10.
+
+```{r}
+library(boot)
+cv <- cv.glm(data = joined_data, cost = loss_func, glmfit = m, K = 10)
+cv$delta[1]
+```
+
+The average number of wrong predictions in the cross validation is 0.2549267 which is a lower that in my model (see the one above). So 10-cross validation gives a lower error than my model.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

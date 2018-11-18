@@ -1,0 +1,10 @@
+"0","loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+loss_func(class = joined_data$high_use, prob = 0)
+"
+"1","[1]"
+"1"," 0.2984293"
+"1","
+"
