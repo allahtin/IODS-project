@@ -1,0 +1,292 @@
+# ANALYSIS part of the Exercise Set 4
+
+\vspace{20pt}
+
+##1&2. Reading the Boston data from the MASS package and exploring it
+
+```{r}
+library(MASS)
+data("Boston")
+str(Boston)
+dim(Boston)
+```
+
+This dataset contains information collected by the U.S Census Service concerning housing in the area of Boston Mass. It was obtained from the StatLib archive (http://lib.stat.cmu.edu/datasets/boston), and has been used extensively throughout the literature to benchmark algorithms. However, these comparisons were primarily done outside of Delve and are thus somewhat suspect. The dataset is small in size with only 506 cases.The data was originally published by Harrison, D. and Rubinfeld, D.L. *`Hedonic prices and the demand for clean air'*, J. Environ. Economics & Management, vol.5, 81-102, 1978.
+
+##3. Variables of Boston data.
+
+There are 14 attributes in each case of the dataset. They are:
+CRIM - per capita crime rate by town;
+ZN - proportion of residential land zoned for lots over 25,000 sq.ft.;
+INDUS - proportion of non-retail business acres per town;
+CHAS - Charles River dummy variable (1 if tract bounds river; 0 otherwise);
+NOX - nitric oxides concentration (parts per 10 million);
+RM - average number of rooms per dwelling;
+AGE - proportion of owner-occupied units built prior to 1940;
+DIS - weighted distances to five Boston employment centres;
+RAD - index of accessibility to radial highways;
+TAX - full-value property-tax rate per $10,000;
+PTRATIO - pupil-teacher ratio by town;
+B - 1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town;
+LSTAT - % lower status of the population;
+MEDV - Median value of owner-occupied homes in $1000's.
+
+Let' see the matrix of Boston variables.
+```{r}
+pairs(Boston)
+```
+
+
+```{r}
+summary(Boston)
+```
+
+Let's see correlations between variables in the dataset.
+```{r}
+library(dplyr)
+library(corrplot)
+cor_matrix<-cor(Boston) %>% round(digits = 2)
+corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.cex = 0.6)
+```
+
+Interpretation: we can see that some variables correlate greatly with ech other, for example, INDUS, NOX and AGE (positive correlation). INDUS and NOX correlate negatively. COrrelation plot is very informative about the relationships of the variables.
+
+##4.Standardization the dataset using scale() and summaries of the scaled data.
+
+```{r}
+boston_scaled <- scale(Boston)
+summary(boston_scaled)
+class(boston_scaled)
+boston_scaled <- as.data.frame(boston_scaled)
+class(boston_scaled)
+
+```
+
+As we can see now, mean of each variable is set to zero.We also converted boston_scale object from matrix to the dateframe using R functions and verified the class of the object.
+
+Now we will create a categorical variable of the crime rate from the scaled crime rate using the quantiles as the break points in the categorical variable. We need to drop the old crime rate variable from the dataset, too.
+
+Let's have a look at the variable "crime".
+
+```{r}
+summary(boston_scaled$crim)
+```
+
+Now we make a quantile vector of it and check it.
+```{r}
+bins <- quantile(boston_scaled$crim)
+bins
+```
+
+Now we make a categorical variable out of variable "crime" with 4 labels.Then we check frequences by table().
+
+```{r}
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, labels = c("low", "med_low", "med_high", "high"))
+table(crime)
+```
+
+Next step is to remove original crim from the dataset and add the new categorical value to scaled data. We will also check it afterwards.
+
+```{r}
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+boston_scaled <- data.frame(boston_scaled, crime)
+table(boston_scaled$crime)
+```
+
+Now we will create a train dataset(80% of the dataset) and a test dataset from Boston.
+
+```{r}
+n <- nrow(boston_scaled)
+ind <- sample(n,  size = n * 0.8)
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+
+```
+
+##5.Linear discriminant analysis
+
+Let's run linear discriminant analysis.
+
+```{r}
+lda.fit <- lda(crime ~ ., data = train)
+lda.fit
+```
+
+Now we will plot the results of lda.
+```{r}
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "orange", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+classes <- as.numeric(train$crime)
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 1)
+```
+
+##6. classes prediction with the LDA model on the test data. Cross-tabulation of the results.
+
+```{r}
+correct_classes <- test$crime
+test <- dplyr::select(test, -crime)
+lda.pred <- predict(lda.fit, newdata = test)
+table(correct = correct_classes, predicted = lda.pred$class)
+
+```
+
+##7. Reload of Boston and k-means algorithm.
+
+```{r}
+library(MASS)
+data("Boston")
+dist_eu <- dist(scale(Boston))
+summary(dist_eu)
+dist_man <- dist(scale(Boston), method = "manhattan")
+summary(dist_man)
+```
+
+Now we do k-means clustering and plot it!
+
+```{r}
+km <-kmeans(Boston, centers = 3)
+pairs(Boston, col = km$cluster)
+```
+
+Next step is to investigate k number.
+
+```{r}
+library(ggplot2)
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+km <-kmeans(Boston, centers = 2)
+pairs(Boston, col = km$cluster)
+```
+
+Interpretation: The optimal number of clusters is when the value of total WCSS changes radically. In this case, two clusters would seem optimal.SO we reran k-means with two clusters.
+
+##Super-Bonus.
+
+```{r}
+model_predictors <- dplyr::select(train, -crime)
+dim(model_predictors)
+dim(lda.fit$scaling)
+matrix_product <- as.matrix(model_predictors) %*% lda.fit$scaling
+matrix_product <- as.data.frame(matrix_product)
+library(plotly)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers')
+```
+
+Nice plot! 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
