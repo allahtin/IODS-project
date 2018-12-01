@@ -1,2 +1,0 @@
-"0","survivalFitIPI <- survfit(Surv(followUp,status) ~ IPI_Group, data = df4)"
-"0","ggsurvplot(survivalFitIPI, data = df4, pval = TRUE)"

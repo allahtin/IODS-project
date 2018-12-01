@@ -1,0 +1,120 @@
+# ANALYSIS part of the Exercise Set 5
+
+\vspace{20pt}
+
+##1. Reading the human data from the data folder and exploring it
+
+```{r}
+human<-read.table("C:/Users/ELITEBOOK/Documents/GitHub/IODS-project/data/human.txt", header=T)
+library(dplyr)
+library(GGally)
+library(corrplot)
+#ggpairs(human,cardinality_threshold = 155)# this is crashing my laptop
+#str(human)
+human<-human %>% 
+  mutate_at(vars(GNI), as.numeric)
+summary(human)
+cor(human) %>% corrplot #  the correlation matrix and corrplot
+```
+
+I tried to show graphical overview of the data using Ggally ggpairs, but it crashes my computer, as there are too many countries. So I left the code here but I don't run it. Corplot worked and shows variables correlating highly (bigger circles) or not (smaller size of circles), directly (blue) or inversely (red).The distribution of the variables can be checked from the summaries: if the variable is a ratio, it varies 0-1. Other ones seem to vari greately.
+
+##2. PCA on the non-standardized data
+
+Let's first use non-standardized data and go directly to PCA.
+
+```{r}
+pca_human <- prcomp(human)
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+```
+
+We will have a look at the principal components and the variance.
+
+```{r}
+s <- summary(pca_human)
+s
+```
+
+```{r}
+pca_pr <- round(100*s$importance[2,], digits = 1) 
+pca_pr
+```
+
+We can see that PC1 explains 94% of the variance in the data set.Together first two components PC1 and PC2 explain allmost whole variance (98%). 
+Let's egnerate a bit more clear plot of two components.
+```{r}
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+```
+
+##3&4. PCA on the standardized data. Interpretation. Should we scale the data?
+
+Now we repeat same steps with the scaled data.
+
+```{r}
+human_std <- scale(human)
+summary(human_std)
+pca_human <- prcomp(human_std)
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+
+```
+
+Plot looks completely different! Let's have a look at Principal components.
+
+```{r}
+s1 <- summary(pca_human)
+s1
+pca_pr <- round(100*s$importance[2,], digits = 1) 
+pca_pr
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+```
+
+Now we got completely different results. PC1 explains barely half of variance, together PC1 and PC2 explain about 65% of variance. Let's see what is PC1 and PC2 in each case.In case of the non-standardized variable, PC1 is Edu2.FM and PC2 is Labo.FM, and they, as we remember, explained almost all the variance in the human dataset. Once the dataset was scaled, the PCA again suggests same variables as PC1 and PC2, but scaled, they explain 2/3 of the variance. The decision whether we should scale or not the variables is crucial here. In reality, I think that we need to see what is the variable's distribution before scaling and after. Sometimes, scaling makes things worse, as the true nature and meaning of the measurement vanishes after scaling. 
+In this case, the scaling probably served a better purpose: our dataset is not anymore explained by just two components.I can only suggest, that once we have all kinds of variables, e.g. some measured in hundreds (GNI) and some between 0 and 1 (ratios Edu2.FM and Labo.FM), it makes sense to scale the dateset and make them comparable.
+
+##5. Tea dataset: load and explore.MCA.
+Let's install all packages and load the dataset and have a "glimpse" on it.
+
+```{r}
+library(FactoMineR)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+data("tea")
+glimpse(tea)
+str(tea)
+```
+
+Dataset "tea" has 300 rows and 36 columns. The data  concern a questionnaire on tea. 300 individuals were asked how they drink tea (18 questions), what are their product's perception (12 questions) and some personal details (4 questions).Rows represent the individuals, columns represent the different questions. The first 18 questions are active ones, the 19th is a supplementary quantitative variable (the age) and the last variables are supplementary categorical variables.
+We can check summaries and some plots of the data, but it is almost solely categorical, so plot tools are quite limited for this data visualization.
+
+```{r}
+summary(tea)
+gather(tea) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+```
+
+Now let's do MCA but first we take some columns of tea, as it is done in the Datacamp exercise.
+
+```{r}
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+tea_time <- select(tea, one_of(keep_columns))
+mca <- MCA(tea_time, graph = FALSE)
+summary(mca)
+plot(mca, invisible=c("ind"), habillage = "quali")
+
+```
+
+We got a biplot of first two principal components - "where" and "how", if I understand correctly. "how" is whether the individuals prefer tea bags or not, and "where" corresponds to where the tea was purchased - in the chain store or tea shop. These two questions give the most to Dim 1 and Dim 2. The plot supports these explanations.
+
+
+
+
+
+
+
+
+
+
