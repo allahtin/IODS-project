@@ -1,0 +1,9 @@
+"0","if(!require(data.table)){
+    install.packages(""data.table"")
+    library(data.table)
+}
+"
+"2","Loading required package: data.table
+"
+"2","data.table 1.11.8  Latest news: r-datatable.com
+"

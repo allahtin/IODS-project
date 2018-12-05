@@ -1,0 +1,298 @@
+# ANALYSIS part of the Exercise Set 6
+
+\vspace{20pt}
+
+##1. Reading the data and exploring it (the longer formats of rats and bprs)
+I will repeat here steps from R script, so I could have data transformation here and start analyses. 
+
+```{r}
+library(dplyr)
+library(tidyr)
+BPRS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/BPRS.txt", sep = "", header =T)
+rats<-read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt", sep = "", header =T)
+BPRS$treatment <- factor(BPRS$treatment)
+BPRS$subject <- factor(BPRS$subject)
+rats$ID <- factor(rats$ID)
+rats$Group <- factor(rats$Group)
+BPRSL <-  BPRS %>% gather(key = weeks, value = bprs, -treatment, -subject)
+BPRSL <-  BPRSL %>% mutate(week = as.integer(substr(weeks,5,5)))
+ratsL <-  rats %>% gather(key =WD, value = rats, -ID, -Group)
+ratsL <-  ratsL %>% mutate(Time = as.integer(substr(WD,3,4)))
+
+```
+
+Now quick look at data structures of long formats, as I already went through it in the R script. We can also use head(), to have a quick glance how the data look like, if we compeletly forgot what is where.
+
+```{r}
+glimpse(BPRSL)
+glimpse(ratsL)
+head(BPRSL)
+head(ratsL)
+```
+
+Now we recalled what we have as our datasets and we can proceed to the analyses of rats data (Chapter 8).
+
+##2. RATS data analyses (Chapter 8, ANOVA).
+
+We will start with visualizing individuals measurements (weight) by three groups on the plot.
+
+```{r}
+library(ggplot2)
+ggplot(ratsL, aes(x = Time, y = rats, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(ratsL$rats), max(ratsL$rats)))
+```
+
+These plots show the variability of weight in three groups: for example, in Group1, the weights are the lowest, while in Group 2 we have higher values and one rat with the highest weight. Group 3 is more homogenous and with higher values.
+
+###Data standardization
+
+We want now to standardize the variables to see if this changes the way data are distributed.
+
+```{r}
+ratsL <- ratsL %>%
+  group_by(Time) %>%
+  mutate(stdrats = (rats - mean(rats))/sd(rats) ) %>%
+  ungroup()
+glimpse(ratsL)
+ggplot(ratsL, aes(x = Time, y = stdrats, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  scale_y_continuous(name = "standardized rats")
+
+```
+
+We now can see that Y-axis has the universal scale, as weight is scaled for all groups. So we did not loose the variability inside the groups but we made data a bit more homogenious between the groups.
+Now we will make another plot, checking groups by weight mean values across time.
+
+```{r}
+n <- ratsL$Time %>% unique() %>% length()
+ratsS <- ratsL %>%
+  group_by(Group, Time) %>%
+  summarise( mean = mean(rats), se = sd(rats)/sqrt(n) ) %>%
+  ungroup()
+glimpse(ratsS)
+ggplot(ratsS, aes(x = Time, y = mean, linetype = Group, shape = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1,2,3)) +
+  geom_point(size=3) +
+  scale_shape_manual(values = c(1,2,3)) +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se, linetype="1"), width=0.3) +
+  theme(legend.position = c(0.9,0.5)) +
+  scale_y_continuous(name = "mean(rats) +/- se(rats)")
+
+```
+
+Now we see the plot for three groups by weight mean values and it gives a very nice overview of three groups against each other. As in previous lines, we see that Group 1 has lowest mean of weight, while Groups 2 and 3 are closer to each other.
+
+###Outliers in the data?
+Now we will check of rats data contain outliers.
+
+```{r}
+ratsL8S <- ratsL %>%
+  filter(Time > 0) %>%
+  group_by(Group, ID) %>%
+  summarise( mean=mean(rats) ) %>%
+  ungroup()
+glimpse(ratsL8S)
+# Draw a boxplot of the mean versus treatment
+ggplot(ratsL8S, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun.y = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(rats), WD ALL")
+# Create a new data by filtering the outlier and adjust the ggplot code the draw the plot again with the new data
+ratsL8S1 <- ratsL8S %>%
+  filter(mean < 550)# first outlier gone.
+ratsL8S2 <- ratsL8S1 %>%
+  filter(mean > 250)#second outlier gone.ratsL8S2 is our data.
+ggplot(ratsL8S2, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun.y = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(rats minus 2 outliers), WD ALL")
+```
+
+Now we removed 2 outliers: one from Group 1 with lowest mean and one from the Group 2 with the highest mean. I am not sure that this is how you deal with them but I follow the example. One outlier in Group 3 stays, as it is inside the range of Group 2 means. Now we are ready for ANOVA.
+
+###ANOVA
+
+```{r}
+# Add the baseline from the original data as a new variable to the summary data
+ratsL8S2 <- ratsL8S %>%
+  mutate(baseline = rats$WD1)
+# Fit the linear model with the mean as the response 
+fit <- lm(mean ~ baseline + Group, data = ratsL8S2)
+# Compute the analysis of variance table for the fitted model with anova()
+anova(fit)
+
+```
+
+We can see a very low P value (5.217E-15), so we can say that there is a statistically significant difference in weight between the groups. ANOVA does not show between which groups, as it tests var1=var2=var3 as Hyp0, so somewhere variances are not equal.Probably, Group 1 is different from Group 2 and 3, so it drives the analysis of variance towards significance. So, we completed ANOVA for 3 groups.
+
+##3. BPRS data analyses (Chapter 9, Linear Mixed Effects Models).
+
+Now we switch to BPRS data where we have bprs measurements for 20 men who have taking either Treatment 1 or Treatment 2 (20 subjects in each group). Let's have a quick look at the data.
+
+```{r}
+ggplot(BPRSL, aes(x = week, y = bprs, group = subject)) +
+  geom_line()
+```
+
+Here we see plots for all individuals across 8 weeks showing the changes in bprs measurement.
+
+A better way would be this kind of a plot:
+
+```{r}
+ggplot(BPRSL, aes(x = week, y = bprs, linetype = subject)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ treatment, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(BPRSL$bprs), max(BPRSL$bprs)))
+```
+
+Now we can see them by treatments which is much better way to do it.
+
+###Linear regression model
+
+Let's proceed to the linear model assuming that measurements are independent. That would be a basic regression model run by lm() function in R. Here we probably do not need to remove the outliers as in rats dataset, as lm is not so sensitive to them as ANOVA is.
+
+```{r}
+BPRS_reg <- lm(bprs ~ week + treatment, data = BPRSL)
+
+# print out a summary of the model
+summary(BPRS_reg)
+```
+
+We got a statistically significant difference between the groups, with a P value 2E-16, but between weeks, not treatments, if I understand correctly.
+
+###Random intercept model
+Now we fit the random intercept model, as measurements are not necessarily independent and we need to check different models for the data analysis.
+ 
+```{r}
+library(lme4)
+# Create a random intercept model
+BPRS_ref <- lmer(bprs ~ week + treatment + (1 | subject), data = BPRSL, REML = FALSE)
+
+# Print the summary of the model
+summary(BPRS_ref)
+```
+
+Fitting a random intercept model allows the linear regression fit for each man to differ in intercept from other men. Now we can move on to fit the random intercept and random slope model to the bprs measurement data. 
+
+###Random Intercept and Random Slope Model
+
+We will run a new model and perform ANOVA on both of them.
+
+```{r}
+BPRS_ref1 <- lmer(bprs ~ week + treatment + (week | subject), data = BPRSL, REML = FALSE)
+summary(BPRS_ref1)
+anova(BPRS_ref1, BPRS_ref)
+```
+
+Let's check chi-squared statistics (7.2721) and  P value (0.02636) of the likelihood ratio test between BPRS_ref1 and BPRS_ref. The lower the value the better the fit against the comparison model.We have 0.02636 as a P value, which is below the cutoff of 0.05 then we usually choose for the statistical significancee.
+Let's try to fit interaction of week and treatment and see if that improves the fitting.
+
+###Random Intercept and Random Slope Model with interaction
+
+Here we fit a random intercept and slope model that allows for a treatment × week interaction. We run the new model and test ANOVA for the new one and the previous model.
+
+```{r}
+BPRS_ref2 <- lmer(bprs ~ week * treatment + (week | subject), data = BPRSL, REML = FALSE)
+summary(BPRS_ref2)
+anova(BPRS_ref2, BPRS_ref1)
+```
+
+Again we check chi-squared statistics (3.1712) and  P value (0.07495) of the likelihood ratio test between BPRS_ref2 and BPRS_ref1. Now P value is greater than 0.05, so this interaction does not seem to improve the previous model. 
+
+### Visualization for the Random Intercept and Random Slope Model fitting
+
+Let's try to visualize it before and after we fitted Random Intercept and Random Slope Model BPRS_ref1.Since last model (with interaction) had P value greater then 0.05, I will focus on the previous model where we at least saw a smaller P value.
+
+```{r}
+ggplot(BPRSL, aes(x = week, y = bprs, group = subject)) +
+  geom_line() +
+  scale_x_continuous(name = "Time (weeks)", breaks = seq(0, 8, 2)) +
+  scale_y_continuous(name = "bprs") +
+  theme(legend.position = "top")
+
+# Create a vector of the fitted values
+Fitted <- fitted(BPRS_ref1)
+
+# Create a new column fitted to BPRSL
+BPRSL <- BPRSL %>%
+  mutate(Fitted)
+
+# draw the plot of BPRSL with fitted value
+ggplot(BPRSL, aes(x = week, y = Fitted, group = subject)) +
+  geom_line() +
+  scale_x_continuous(name = "Time (weeks)", breaks = seq(0, 8, 2)) +
+  scale_y_continuous(name = "Fitted bprs") +
+  theme(legend.position = "top")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

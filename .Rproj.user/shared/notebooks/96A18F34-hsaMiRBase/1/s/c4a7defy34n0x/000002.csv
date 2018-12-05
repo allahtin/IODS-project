@@ -1,0 +1,11 @@
+"0","miRBaseFA<-file.path(params$miRBaseFolder, params$miRBaseAll)
+miRBaseHumanFA<-file.path(params$miRBaseFolder, params$miRBaseHuman)
+miRBaseFA
+"
+"1","[1]"
+"1"," ""C://Users/ELITEBOOK/Dropbox/Oslo/mature.fa"""
+"1","
+"
+"0","miRBaseHumanFA"
+"1","character(0)
+"

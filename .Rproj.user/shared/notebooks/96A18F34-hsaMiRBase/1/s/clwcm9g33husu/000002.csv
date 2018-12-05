@@ -1,0 +1,11 @@
+"0","allMiRsB = readRNAStringSet(miRBaseFA)
+humanMiRsB<-allMiRsB[names(allMiRsB) %like% ""hsa""]
+af<-alphabetFrequency(humanMiRsB, baseOnly=TRUE, as.prob=TRUE)
+(colSums(af)/nrow(af))[""C""] + (colSums(af)/nrow(af))[""G""]
+"
+"1","        C "
+"1","
+"
+"1","0.5238101 "
+"1","
+"

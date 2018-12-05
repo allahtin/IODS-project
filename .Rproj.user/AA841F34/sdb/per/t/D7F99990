@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "#MF9155 course, day 1, lab1\n#Alexandra Lahtinen\n#3.12.2018\n#Contents: R Bioconductor.\ngetwd()\nsetwd(\"C:/Users/ELITEBOOK/Dropbox/Oslo\")\nload(\"Gerstung2015.RData\")\nls()\nlibrary(Biobase)\neset <- ExpressionSet(assayData=matrix(runif(800),nrow=100, ncol=8))#from page 18 of bioc1 we can see what we cand do with this artiificial data\nstr(gset)\nhead(gset)\ndim(gset)\npdata1<-phenoData(eset)\n\n\n\n\n\n\n\n",
+    "created" : 1543831615545.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3944579765",
+    "id" : "D7F99990",
+    "lastKnownWriteTime" : 1543840924,
+    "last_content_update" : 1543840924,
+    "path" : "C:/Users/ELITEBOOK/Desktop/Oslocourse/Day1Lab1_Intro.R",
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

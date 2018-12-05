@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "---\ntitle: \"Program Design\"\nauthor: ''\nparams:\n  miRBaseAll: mature.fa\n  miRBaseFolder: C://Users/ELITEBOOK/Dropbox/Oslo\noutput:\n  html_document: default\n  pdf_document: default\n---\n\n## parameters\nWe can use parameters to specify the file path. You can read more aboout RMarkdown parameters [*here*](https://rmarkdown.rstudio.com/developer_parameterized_reports). The advantage with using parameters is that you only have to change the filepath once, at the top of the file. \n\nSo, set some paths to the files we need...\n```{r setPaths}\nmiRBaseFA<-file.path(params$miRBaseFolder, params$miRBaseAll)\nmiRBaseHumanFA<-file.path(params$miRBaseFolder, params$miRBaseHuman)\nmiRBaseFA\nmiRBaseHumanFA\n```\n## calculating the GC content in a fasta file\nThere are multiple packages available for reading FASTA files. We are going to try calculating GC content using `seqinr` and `Biostrings`\n\n##Loading packages\nI deliberately put the load package commands just before they are used, this makes it easier to figure out why we are loading them. Compare this to the Gerstung code, which loads all 17 required packages at the top of the code.\n\nWe use the [data.table](https://www.rdocumentation.org/packages/data.table/versions/1.11.4 \"data.table\") package, as it provides added functionality for extracting data from data.frames. Specifically, we use the `%like%` function to provide partial matching. Note: this is completely different from the `%like%` function in the [DescTools](https://www.rdocumentation.org/packages/DescTools/versions/0.99.19 \"DescTools\") package, which is for making RegEx like queries on text.\n```{r loadDataTable}\nif(!require(data.table)){\n    install.packages(\"data.table\")\n    library(data.table)\n}\n```\n\nFirst, let's use `Biostrings`...\n\n\n```{r loadBiostrings}\nif(!require(Biostrings)){\n    install.packages(\"Biostrings\")\n    library(Biostrings)\n}\n```\n\n```{r calcGCBioStrings}\nallMiRsB = readRNAStringSet(miRBaseFA)\nhumanMiRsB<-allMiRsB[names(allMiRsB) %like% \"hsa\"]\naf<-alphabetFrequency(humanMiRsB, baseOnly=TRUE, as.prob=TRUE)\n(colSums(af)/nrow(af))[\"C\"] + (colSums(af)/nrow(af))[\"G\"]\n```\n\n\nNow try doing the same thing with `seqinr`:\n\n```{r loadSeqinR}\n#if(!require(seqinr)){\n   # install.packages(\"seqinr\")\n   # library(seqinr)\n#}\n```\n\n```{r calcGCSeqinr}\nlibrary(seqinr)\nallMiRsS <- read.fasta(file = miRBaseFA)\nhumansMiRsS<-allMiRsS[names(allMiRsS) %like% \"hsa\"]\ngc <- function(x){\n   GC(x)\n}\nmean(sapply(humansMiRsS, gc))\n```\n\nSomething wrong here, but we will come back to this.",
+    "created" : 1543841818837.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1686176948",
+    "id" : "28D2475E",
+    "lastKnownWriteTime" : 1543846580,
+    "last_content_update" : -2147483648,
+    "path" : "C:/Users/ELITEBOOK/Dropbox/Oslo/code/hsaMiRBase.Rmd",
+    "project_path" : null,
+    "properties" : {
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
